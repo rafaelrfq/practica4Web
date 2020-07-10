@@ -24,7 +24,7 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
-                <#if admin == true>
+                <#if admin == true && usuario??>
                     <li class="nav-item inline">
                         <a class="nav-link" href="/api/productos/listar/">Comprar</a>
                     </li>
@@ -40,7 +40,7 @@
                     <li>
                         <a class="nav-link" href="/api/usuarios/logout/">Bienvenido ${usuario.nombre}. Logout</a>
                     </li>
-                <#elseif usr == true>
+                <#elseif usr == true && usuario??>
                     <li class="nav-item inline">
                         <a class="nav-link" href="/api/productos/listar/">Comprar</a>
                     </li>

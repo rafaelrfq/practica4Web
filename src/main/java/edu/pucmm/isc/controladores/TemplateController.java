@@ -30,6 +30,7 @@ public class TemplateController {
 
     //Variables usadas en varias rutas
     CarroCompra carrito;
+    Usuario usuarioSesion;
 
     //Uso de rutas para mostrar templates
     public void aplicarRutas() {
@@ -37,10 +38,21 @@ public class TemplateController {
 
             // Verificar si el carrito existe en la sesion antes de cargar
             before(ctx -> {
+                usuarioSesion = (Usuario) tienda.getSesiones().get(ctx.req.getSession().getId());
                 carrito = ctx.sessionAttribute("carrito");
                 if(carrito == null) {
                     List<Producto> productosIniciales = new ArrayList<Producto>();
                     ctx.sessionAttribute("carrito", new CarroCompra(1, productosIniciales));
+                }
+                if(usuarioSesion != null && usuarioSesion.getUsuario().equals("admin")){
+                    tienda.setAdm(true);
+                    tienda.setUsr(false);
+                } else if(usuarioSesion != null && tienda.getUsuarioPorNombreUsuario(usuarioSesion.getUsuario()) != null){
+                    tienda.setAdm(false);
+                    tienda.setUsr(true);
+                } else {
+                    tienda.setAdm(false);
+                    tienda.setUsr(false);
                 }
             });
 
@@ -53,9 +65,9 @@ public class TemplateController {
                     contexto.put("title", "CRUD Productos");
                     contexto.put("productos", tienda.getListaProductos());
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("/public/templates/crud.ftl", contexto);
                 });
 
@@ -66,11 +78,17 @@ public class TemplateController {
                    String nombre = ctx.formParam("nombre");
                    BigDecimal precio = new BigDecimal(ctx.formParam("precio"));
                    String descripcion = ctx.formParam("descripcion");
-                   byte[] bytes = ctx.uploadedFile("foto").getContent().readAllBytes();
-                   String encondedString = Base64.getEncoder().encodeToString(bytes);
-                   String type = ctx.uploadedFile("foto").getContentType();
-                   Producto tmp = new Producto(nombre, precio, descripcion, type, encondedString);
-                   tienda.insertarProductoDB(tmp);
+                   Producto tmp = new Producto(nombre, precio, descripcion);
+                   Producto producto = tienda.insertarProductoDB(tmp);
+                   ctx.uploadedFiles("fotos").forEach(uploadedFile -> {
+                       try{
+                           byte[] bytes = uploadedFile.getContent().readAllBytes();
+                           String encondedString = Base64.getEncoder().encodeToString(bytes);
+                           tienda.insertarFotoProducto(new FotoProducto(producto, uploadedFile.getContentType(), encondedString));
+                       } catch (IOException e){
+                           e.printStackTrace();
+                       }
+                   });
                    ctx.redirect("/api/productos/crud");
                 });
 
@@ -82,9 +100,9 @@ public class TemplateController {
                     contexto.put("title", "Editar Producto");
                     contexto.put("prod", tmp);
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("/public/templates/editar_prod.ftl", contexto);
                 });
 
@@ -114,22 +132,20 @@ public class TemplateController {
                     Map<String, Object> contexto = new HashMap<>();
                     contexto.put("producto", prod);
                     contexto.put("comentarios", prod.getListaComentarios());
-                    contexto.put("tipo", prod.getMimeType());
-                    contexto.put("foto", prod.getFotoBase64());
+                    contexto.put("fotos", prod.getListaFotos());
                     contexto.put("title", "Visualizar Producto");
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("public/templates/visualizar.ftl", contexto);
                 });
 
                 // Manejar creacion de comentario
                 // http://localhost:7000/api/productos/comentario/
                 post("/productos/comentario/:id", ctx -> {
-                    Usuario user = ctx.sessionAttribute("usuario");
                     Producto prod = tienda.getProductoPorID(ctx.pathParam("id", Integer.class).get());
-                    Comentario comment = new Comentario(ctx.formParam("comentario"), user.getUsuario(), prod);
+                    Comentario comment = new Comentario(ctx.formParam("comentario"), usuarioSesion.getUsuario(), prod);
                     tienda.insertarComentario(comment);
                     ctx.redirect("/api/productos/visualizar/" + ctx.pathParam("id", Integer.class).get());
                 });
@@ -149,9 +165,9 @@ public class TemplateController {
                     contexto.put("title", "Listado de Productos");
                     contexto.put("productos", tienda.getListaProductos());
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("/public/templates/productos.ftl", contexto);
                 });
 
@@ -172,9 +188,9 @@ public class TemplateController {
                     contexto.put("title", "Carrito de Compra");
                     contexto.put("carrito", carrito);
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("/public/templates/carrito.ftl", contexto);
                 });
 
@@ -216,9 +232,9 @@ public class TemplateController {
                     contexto.put("title", "Listado de Ventas Realizadas");
                     contexto.put("ventas", tienda.getListaVentas());
                     contexto.put("cantidad", carrito.getListaProductos().size());
-                    contexto.put("usr", tienda.getUsr());
-                    contexto.put("admin", tienda.getAdm());
-                    contexto.put("usuario", ctx.sessionAttribute("usuario"));
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
+                    contexto.put("usuario", usuarioSesion);
                     ctx.render("/public/templates/ventas.ftl", contexto);
                 });
             });

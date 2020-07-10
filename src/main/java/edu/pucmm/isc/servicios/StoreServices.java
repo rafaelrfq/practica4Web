@@ -7,15 +7,19 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 public class StoreServices {
 
     private static StoreServices tienda;
     private CarroCompra carrito;
-    private boolean usr = false;
-    private boolean adm = false;
+    private boolean adm;
+    private boolean usr;
+    private HashMap<String,Object> sesiones = new HashMap<>();
+    private HashMap<String,Object> cookies = new HashMap<>();
     private ProductServices productos = ProductServices.getInstance();
+    private FotoProdServices fotosProducto = FotoProdServices.getInstance();
     private UserServices usuarios = UserServices.getInstance();
     private SaleServices ventas = SaleServices.getInstance();
     private Intermediary intermediario = Intermediary.getInstance();
@@ -54,13 +58,15 @@ public class StoreServices {
 
     public void setCarrito(CarroCompra cart) { this.carrito = cart; }
 
-    public boolean getUsr() { return usr; }
+    public HashMap<String,Object> getSesiones() { return sesiones; }
 
-    public void setUsr(boolean loggeado) { usr = loggeado; }
+    public boolean isAdm() { return adm; }
 
-    public boolean getAdm() { return adm; }
+    public void setAdm(boolean adm) { this.adm = adm; }
 
-    public void setAdm(boolean admin) { adm = admin; }
+    public boolean isUsr() { return usr; }
+
+    public void setUsr(boolean usr) { this.usr = usr; }
 
     // Productos, lista de productos y comentarios
 
@@ -68,8 +74,8 @@ public class StoreServices {
         return productos.findByID(id).get(0);
     }
 
-    public void insertarProductoDB(Producto producto){
-        productos.crear(producto);
+    public Producto insertarProductoDB(Producto producto){
+        return productos.crear(producto);
     }
 
     public void actualizarProducto(Producto producto) {
@@ -87,6 +93,8 @@ public class StoreServices {
     public void insertarComentario(Comentario comentario) { comentarios.crear(comentario); }
 
     public void eliminarComentario(Comentario comentario) { comentarios.eliminar(comentario.getId()); }
+
+    public void insertarFotoProducto(FotoProducto foto) { fotosProducto.crear(foto); }
 
     // Carrito
 
@@ -115,23 +123,31 @@ public class StoreServices {
         return usuarios.findAll();
     }
 
-    public Usuario loginUsuario(String usuario, String passw){
+    public Usuario revisarCookie(String cookie){
+        Usuario usuario = null;
+        if(cookies.containsKey(cookie)){
+            usuario = (Usuario) cookies.get(cookie);
+        }
+        return usuario;
+    }
+
+    public Usuario loginUsuario(String usuario, String passw, String sessionId, String cookie){
         Usuario tmp = getUsuarioPorNombreUsuario(usuario);
         if(tmp == null) {
             throw new RuntimeException("Usuario no existente!");
-        } else if(tmp.getUsuario().equals("admin") && tmp.getPassword().equals("admin")) {
-            adm = true;
-            usr = false;
+        } else if(usuario.equals("admin") && passw.equals("admin")) {
+            sesiones.put(sessionId, tmp);
+            cookies.put(cookie, tmp);
             return tmp;
         } else if(tmp.getUsuario().equals(usuario) && tmp.getPassword().equals(passw)) {
-            usr = true;
-            adm = false;
+            sesiones.put(sessionId, tmp);
+            cookies.put(cookie, tmp);
             return tmp;
         } else throw new RuntimeException("Password incorrecto!");
     }
 
-    public void logoutUsuario() {
-        usr = false;
-        adm = false;
+    public void logoutUsuario(String sessionId, String cookie) {
+        sesiones.remove(sessionId);
+        cookies.remove(cookie);
     }
 }

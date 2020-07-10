@@ -23,8 +23,10 @@ public class Server {
         ConexionDB.getInstance().testConn();
 
         // Creacion de usuarios predeterminados
-        UserServices.getInstance().crear(new Usuario("rafael", "Rafael Felipe", "0712"));
-        UserServices.getInstance().crear(new Usuario("admin", "Administrador", "admin"));
+        Usuario usr1 = new Usuario("rafael", "Rafael Felipe", "0712");
+        Usuario usr2 = new Usuario("admin", "Administrador", "admin");
+        UserServices.getInstance().crear(usr1);
+        UserServices.getInstance().crear(usr2);
 
         Javalin app = Javalin.create(javalinConfig -> {
             javalinConfig.addStaticFiles("/public"); //Agregamos carpeta public como source de archivos estaticos

@@ -27,15 +27,15 @@ public class Producto {
     private BigDecimal precio;
     private int cantidad;
     private String descripcion;
-    private String mimeType;
-    @Lob
-    private String fotoBase64;
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL,  orphanRemoval = true)
     private List<ProductoVentaProd> listaVentas = new ArrayList<>();
 
     @OneToMany(mappedBy = "producto", fetch = FetchType.EAGER)
     private Set<Comentario> listaComentarios;
+
+    @OneToMany(mappedBy = "producto", fetch = FetchType.EAGER)
+    private Set<FotoProducto> listaFotos;
 
     //Constructors
     public Producto() { }
@@ -47,12 +47,10 @@ public class Producto {
         this.precio = precio;
     }
 
-    public Producto(String nombre, BigDecimal precio, String descripcion, String mimeType, String foto) {
+    public Producto(String nombre, BigDecimal precio, String descripcion) {
         this.nombre = nombre;
         this.precio = precio;
         this.descripcion = descripcion;
-        this.mimeType = mimeType;
-        this.fotoBase64 = foto;
     }
 
     //Constructor con cantidad (para agregar a carrito y posteriormente a ventas)
@@ -84,14 +82,6 @@ public class Producto {
 
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    public String getMimeType() { return mimeType; }
-
-    public void setMimeType(String mimeType) { this.mimeType = mimeType; }
-
-    public String getFotoBase64() { return fotoBase64; }
-
-    public void setFotoBase64(String fotoBase64) { this.fotoBase64 = fotoBase64; }
-
     public List<ProductoVentaProd> getListaVentas() { return listaVentas; }
 
     public void setListaVentas(List<ProductoVentaProd> listaVentas) { this.listaVentas = listaVentas; }
@@ -99,6 +89,10 @@ public class Producto {
     public Set<Comentario> getListaComentarios() { return listaComentarios; }
 
     public void setListaComentarios(Set<Comentario> listaComentarios) { this.listaComentarios = listaComentarios; }
+
+    public Set<FotoProducto> getListaFotos() { return listaFotos; }
+
+    public void setListaFotos(Set<FotoProducto> listaFotos) { this.listaFotos = listaFotos; }
 
     @Override
     public boolean equals(Object o) {

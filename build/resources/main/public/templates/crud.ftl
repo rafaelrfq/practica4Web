@@ -31,8 +31,8 @@
                                 <input type="text" class="form-control" id="descripcion" name="descripcion" required>
                             </div>
                             <div class="form-group">
-                                <label for="foto" class="col-form-label">Foto(s):</label>
-                                <input type="file" class="form-control" id="foto" name="foto" required>
+                                <label for="fotos" class="col-form-label">Foto(s):</label>
+                                <input type="file" class="form-control" id="fotos" name="fotos" multiple required>
                             </div>
                             <div class="form-group row justify-content-center">
                                 <button type="submit" class="btn btn-primary mx-2">Aceptar</button>

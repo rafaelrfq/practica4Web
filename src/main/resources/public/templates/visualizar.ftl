@@ -5,7 +5,9 @@
         <br><u><h1>${title}</h1></u><hr>
         <h2 class="text-center">Datos del Producto</h2>
         <div class="card" >
-            <img src="data:${tipo};base64,${foto}" class="card-img-top" alt="Imagen del Producto" width="auto" height="auto" style="height: 50%; width: 50%; display: block; margin-left: auto; margin-right: auto">
+            <#list fotos as foto>
+                <img src="data:${foto.mimeType};base64,${foto.fotoBase64}" class="card-img-top" alt="Imagen del Producto" width="auto" height="auto" style="height: 50%; width: 50%; display: block; margin-left: auto; margin-right: auto">
+            </#list>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4">
@@ -26,11 +28,13 @@
     </div><br>
 
     <#if usr == true>
-        <form action="/api/productos/comentario/${producto.id}" method="post">
-            <br><h2><b>Agregar comentario:</b></h2><br>
-            <textarea name="comentario" id="comentario" cols="50" rows="4" placeholder="Escribir aqui..."></textarea>
-            <button type="submit" class="btn btn-primary">Agregar Comentario</button>
-        </form>
+        <div class="row justify-content-center text-center">
+            <form action="/api/productos/comentario/${producto.id}" method="post">
+                <br><h2><b>Agregar comentario:</b></h2><br>
+                <textarea name="comentario" id="comentario" cols="50" rows="4" placeholder="Escribir comentario aqui..."></textarea>
+                <br><button type="submit" class="btn btn-primary">Agregar Comentario</button>
+            </form>
+        </div>
     </#if>
 
     <br><h1 class="text-center"><b>Comentarios</b></h1><br>

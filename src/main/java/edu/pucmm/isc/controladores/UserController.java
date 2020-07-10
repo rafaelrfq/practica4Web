@@ -34,34 +34,28 @@ public class UserController {
 
             // Verificar si el carrito existe en la sesion y si la cookie recordarme existe antes de cargar
             before(ctx -> {
-                CarroCompra carrito = ctx.sessionAttribute("carrito");
-                if(carrito == null) {
-                    List<Producto> productosIniciales = new ArrayList<Producto>();
-                    ctx.sessionAttribute("carrito", new CarroCompra(1, productosIniciales));
-                }
                 // Verificamos si existe el cookie de recordarme y si existe loggeamos automaticamente al usuario al que le pertenece
                 if(ctx.cookie("recordarme") != null){
-                    for(Usuario tmp : tienda.getListaUsuarios()) {
-                        String key = "@cm1ptgrone" + tmp.getUsuario();
-                        StrongPasswordEncryptor pwEncryptor = new StrongPasswordEncryptor();
-                        String encryptedPassword = pwEncryptor.encryptPassword(key);
-                        if(pwEncryptor.checkPassword(encryptedPassword, ctx.cookie("recordarme"))){
-                            tienda.loginUsuario(tmp.getUsuario(), tmp.getPassword());
-                            ctx.sessionAttribute("usuario", tmp);
-                        }
+                    //ctx.req.changeSessionId();
+                    Usuario usrCookie = tienda.revisarCookie(ctx.cookie("recordarme"));
+                    if(usrCookie != null){
+                        tienda.loginUsuario(usrCookie.getUsuario(), usrCookie.getPassword(), ctx.req.getSession().getId(), ctx.cookie("recordarme"));
                     }
                 }
             });
 
-            path("/api/", () -> {
+            path("/api/usuarios/", () -> {
 
                 // Render de Login de usuarios
                 // http://localhost:7000/api/usuarios/login/
-                get("/usuarios/login/", ctx -> {
+                get("/login/", ctx -> {
+                    if(tienda.isUsr() || tienda.isAdm()) {
+                        ctx.redirect("/");
+                    }
                     CarroCompra carrito = ctx.sessionAttribute("carrito");
                     Map<String, Object> contexto = new HashMap<>();
-                    contexto.put("usr", false);
-                    contexto.put("admin", false);
+                    contexto.put("usr", tienda.isUsr());
+                    contexto.put("admin", tienda.isAdm());
                     contexto.put("title", "Login de Usuario");
                     contexto.put("cantidad", carrito.getListaProductos().size());
                     ctx.render("/public/templates/login.ftl", contexto);
@@ -69,25 +63,26 @@ public class UserController {
 
                 // Manejo de Login de usuarios
                 // http://localhost:7000/api/usuarios/login/
-                post("/usuarios/login/", ctx -> {
+                post("/login/", ctx -> {
                     String usr = ctx.formParam("usuario");
                     String passw = ctx.formParam("password");
                     String check = ctx.formParam("recordarme");
-                    Usuario tmp = tienda.loginUsuario(usr, passw);
+                    String encryptedPassword = null;
+                    ctx.req.changeSessionId();
                     if(check != null && check.equals("yes")){
-                        String key = "@cm1ptgrone" + tmp.getUsuario();
+                        String key = "@cm1ptgrone" + ctx.req.getSession().getId();
                         StrongPasswordEncryptor pwEncryptor = new StrongPasswordEncryptor();
-                        String encryptedPassword = pwEncryptor.encryptPassword(key);
+                        encryptedPassword = pwEncryptor.encryptPassword(key);
                         ctx.cookie("recordarme", encryptedPassword, 604800);
                     }
-                    ctx.sessionAttribute("usuario", tmp);
+                    Usuario tmp = tienda.loginUsuario(usr, passw, ctx.req.getSession().getId(), encryptedPassword);
                     ctx.redirect("/");
                 });
 
                 // Logout de usuarios
                 // http://localhost:7000/api/usuarios/logout/
-                get("/usuarios/logout/", ctx -> {
-                    tienda.logoutUsuario();
+                get("/logout/", ctx -> {
+                    tienda.logoutUsuario(ctx.req.getSession().getId(), ctx.cookie("recordarme"));
                     ctx.req.getSession().invalidate();
                     ctx.removeCookie("recordarme");
                     ctx.redirect("/api/usuarios/login/");
